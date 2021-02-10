@@ -1,0 +1,60 @@
+{
+    "uid": "123e4567-e89b-12d3-a456-426614174000",
+    "kind": {
+        "group": "",
+        "version": "v1",
+        "kind": "Pod"
+    },
+    "resource": {
+        "group": "",
+        "version": "v1",
+        "resource": "pods"
+    },
+    "requestKind": {
+        "group": "",
+        "version": "v1",
+        "kind": "Pod"
+    },
+    "requestResource": {
+        "group": "",
+        "version": "v1",
+        "resource": "pods"
+    },
+    "namespace": "my-namespace",
+    "operation": "CREATE",
+    "object": {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "metadata": {
+            "name": "my-pod"
+        },
+        "spec": {
+            "containers": [
+                {
+                    "name": "nginx",
+                    "image": "nginx:latest"
+                }
+            ],
+            "tolerations": [
+                {
+                    "key": "node.kubernetes.io/not-ready",
+                    "operator": "Exists",
+                    "effect": "NoExecute",
+                    "tolerationSeconds": 300
+                },
+                {
+                    "key": "node.kubernetes.io/unreachable",
+                    "operator": "Exists",
+                    "effect": "NoExecute",
+                    "tolerationSeconds": 300
+                },
+                {
+                    "key": "padok.fr/namespace",
+                    "value": "my-namespace",
+                    "effect": "NoSchedule"
+                }
+            ]
+        },
+        "status": {}
+    }
+}

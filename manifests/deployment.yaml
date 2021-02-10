@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: toleration-injector
+spec:
+  selector:
+    matchLabels:
+      app: toleration-injector
+  template:
+    metadata:
+      labels:
+        app: toleration-injector
+    spec:
+      containers:
+        - name: webhook
+          image: webhook:latest
+          ports:
+            - name: https
+              containerPort: 8443
+          resources:
+            limits:
+              cpu: 100m
+              memory: 50Mi
+          volumeMounts:
+            - mountPath: /tmp/toleration-injector/serving-certs
+              name: certificate
+              readOnly: true
+      volumes:
+        - name: certificate
+          secret:
+            defaultMode: 420
+            secretName: toleration-injector-cert

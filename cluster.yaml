@@ -1,0 +1,32 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  # Node for Kubernetes control plane
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          name: control-plane
+  # Node for everything
+  - role: worker
+    kubeadmConfigPatches:
+      - |
+        kind: JoinConfiguration
+        nodeRegistration:
+          name: everything
+          kubeletExtraArgs:
+            node-labels: "padok.fr/node-is-for=everything"
+  # Node for apps only
+  - role: worker
+    kubeadmConfigPatches:
+      - |
+        kind: JoinConfiguration
+        nodeRegistration:
+          name: apps-only
+          kubeletExtraArgs:
+            node-labels: "padok.fr/node-is-for=apps"
+          taints:
+          - key: padok.fr/namespace
+            value: apps
+            effect: NoSchedule

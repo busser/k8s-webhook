@@ -1,0 +1,6 @@
+{
+    "uid": "123e4567-e89b-12d3-a456-426614174000",
+    "allowed": true,
+    "patch": "W3sib3AiOiJhZGQiLCJwYXRoIjoiL3NwZWMvdG9sZXJhdGlvbnMvMiIsInZhbHVlIjp7ImtleSI6InBhZG9rLmZyL25hbWVzcGFjZSIsInZhbHVlIjoibXktbmFtZXNwYWNlIiwiZWZmZWN0IjoiTm9TY2hlZHVsZSJ9fV0=",
+    "patchType": "JSONPatch"
+}

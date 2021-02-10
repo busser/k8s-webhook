@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: toleration-injector
+spec:
+  selector:
+    app: toleration-injector
+  ports:
+    - name: https
+      port: 8443
+      targetPort: https

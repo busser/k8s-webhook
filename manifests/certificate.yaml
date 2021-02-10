@@ -1,0 +1,18 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: selfsigned
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: toleration-injector
+spec:
+  dnsNames:
+    - toleration-injector.webhook.svc
+    - toleration-injector.webhook.svc.cluster.local
+  secretName: toleration-injector-cert
+  issuerRef:
+    name: selfsigned

@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/inject-tolerations", handlerFrom(handlers.AddTolerations))
+	http.HandleFunc("/inject-tolerations", httpHandlerFrom(handlers.AddTolerations))
 
 	log.Println("Listening on port 8443...")
 	err := http.ListenAndServeTLS(
@@ -24,34 +24,31 @@ func main() {
 	}
 }
 
-type admitterFunc func(admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse
+// AdmissionHandlerFunc responds to a Kubernetes admission request.
+type AdmissionHandlerFunc func(admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse
 
-func handlerFrom(admitter admitterFunc) http.HandlerFunc {
+func httpHandlerFrom(handler AdmissionHandlerFunc) http.HandlerFunc {
 	return func(resp http.ResponseWriter, req *http.Request) {
-		// verify the content type is accurate
+		// Verify the content type is accurate.
 		contentType := req.Header.Get("Content-Type")
 		if contentType != "application/json" {
 			http.Error(resp, "expected Content-Type application/json", http.StatusUnsupportedMediaType)
 			return
 		}
 
-		// decode the admission review from the HTTP request
-		var reviewRequest admissionv1.AdmissionReview
-		if err := json.NewDecoder(req.Body).Decode(&reviewRequest); err != nil {
+		// Decode the admission review from the HTTP request.
+		var review admissionv1.AdmissionReview
+		if err := json.NewDecoder(req.Body).Decode(&review); err != nil {
 			http.Error(resp, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		// provide a response to the admission review's request
-		var reviewResponse admissionv1.AdmissionReview
-		gvk := admissionv1.SchemeGroupVersion.WithKind("AdmissionReview")
-		reviewResponse.SetGroupVersionKind(gvk) // ! Shouldn't this line be after the next one? Is it even necessary?
+		// Call the admission handler.
+		review.Response = handler(*review.Request)
 
-		reviewResponse.Response = admitter(*reviewRequest.Request)
-
-		// encode the admission review into the HTTP response
+		// Encode the admission review into the HTTP response
 		resp.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(resp).Encode(reviewResponse); err != nil {
+		if err := json.NewEncoder(resp).Encode(review); err != nil {
 			http.Error(resp, err.Error(), http.StatusInternalServerError)
 		}
 	}

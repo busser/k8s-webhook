@@ -1,8 +1,9 @@
 
 # Image URL to use all building/pushing image targets
-IMG ?= webhook:latest
+VERSION ?= v1.0.0
+IMG ?= padok.fr/webhook:$(VERSION)
 
-all: build
+all: help
 
 ## help: Display list of commands
 help: Makefile
@@ -21,7 +22,7 @@ run: fmt vet
 	go run ./main.go
 
 ## deploy: Deploy controller in the configured Kubernetes cluster in ~/.kube/config
-deploy:
+deploy: kind-load
 	cd manifests && kustomize edit set image webhook=${IMG}
 	kustomize build manifests | kubectl apply -f -
 
@@ -46,5 +47,5 @@ docker-push:
 	docker push ${IMG}
 
 ## kind-load: Load the docker image to a local kind cluster
-kind-load:
+kind-load: docker-build
 	kind load docker-image ${IMG}

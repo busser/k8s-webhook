@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -16,39 +15,41 @@ const TolerationKey = "padok.fr/namespace"
 // AddTolerations responds to an AdmissionRequest for a Pod with a patch that
 // adds a toleration based on the pod's namespace.
 func AddTolerations(request admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse {
+	// Make sure that the request's Kind is for a Pod resource.
 	gvk := metav1.GroupVersionKind{Group: "", Version: "v1", Kind: "Pod"}
 	if request.Kind != gvk {
 		err := fmt.Errorf("expected %s, got %s", gvk, request.Kind)
 		return admissionResponseError(err)
 	}
 
+	// Decode the Pod from the request.
 	var pod corev1.Pod
 	err := json.Unmarshal(request.Object.Raw, &pod)
 	if err != nil {
 		return admissionResponseError(err)
 	}
 
-	log.Printf("Processing Pod with name %q in namespace %q", request.Name, request.Namespace)
-
+	// Prepare a JSON patch.
 	var patch JSONPatch
 
 	// If the Pod has no tolerations, set an initial value: an empty slice of
 	// tolerations.
-	if len(pod.Spec.Tolerations) == 0 {
-		patch = append(patch, JSONPatchOperation{
+	if pod.Spec.Tolerations == nil {
+		patch.Append(JSONPatchOperation{
 			Op:    "add",
 			Path:  "/spec/tolerations",
 			Value: []corev1.Toleration{},
 		})
 	}
 
-	// This is the toleration we want to add.
+	// Define the toleration to add.
 	toleration := corev1.Toleration{
 		Key:    TolerationKey,
 		Value:  request.Namespace,
 		Effect: corev1.TaintEffectNoSchedule,
 	}
 
+	// Check if the pod already has the toleration.
 	var hasToleration bool
 	for _, t := range pod.Spec.Tolerations {
 		if t == toleration {
@@ -56,23 +57,28 @@ func AddTolerations(request admissionv1.AdmissionRequest) *admissionv1.Admission
 		}
 	}
 
+	// Add the toleration if it is missing.
 	if !hasToleration {
-		patch = append(patch, JSONPatchOperation{
+		patch.Append(JSONPatchOperation{
 			Op:    "add",
-			Path:  fmt.Sprintf("/spec/tolerations/%d", len(pod.Spec.Tolerations)),
+			Path:  "/spec/tolerations/-",
 			Value: toleration,
 		})
 	}
 
-	jsonPatch, err := json.Marshal(patch)
+	// Encode the patch as JSON.
+	encodedPatch, err := json.Marshal(patch)
 	if err != nil {
 		return admissionResponseError(err)
 	}
 
+	// Prepare a response.
 	var response admissionv1.AdmissionResponse
 	response.UID = request.UID
 	response.Allowed = true
-	response.Patch = jsonPatch
+
+	// Include the patch in the response.
+	response.Patch = encodedPatch
 	patchType := admissionv1.PatchTypeJSONPatch
 	response.PatchType = &patchType
 
